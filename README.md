@@ -58,6 +58,12 @@ swift run print-with-stamp input.pdf \
 swift run print-with-stamp input.pdf --stamp "CONFIDENTIAL" --output stamped.pdf --dry-run
 ```
 
+## スタンプ付加例
+
+| スタンプ付加前 | スタンプ付加後 |
+| --- | --- |
+| ![スタンプ付加前](docs/images/sample-before.png) | ![スタンプ付加後](docs/images/sample-after.png) |
+
 ## Options
 
 - `--stamp TEXT`: スタンプ文字列。デフォルトは `STAMP`
