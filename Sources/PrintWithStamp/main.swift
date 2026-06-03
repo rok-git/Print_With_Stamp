@@ -16,10 +16,56 @@ enum PageSelection {
     case list(String)
 }
 
+enum PrintColorMode: String {
+    case auto
+    case color
+    case monochrome
+
+    var lpOptions: [String] {
+        switch self {
+        case .auto:
+            return []
+        case .color:
+            return [
+                "print-color-mode=color",
+                "ColorModel=RGB"
+            ]
+        case .monochrome:
+            return [
+                "print-color-mode=monochrome",
+                "ColorModel=Gray"
+            ]
+        }
+    }
+}
+
+enum PrintSides: String {
+    case auto
+    case oneSided = "one-sided"
+    case longEdge = "two-sided-long-edge"
+    case shortEdge = "two-sided-short-edge"
+
+    var lpOption: String? {
+        switch self {
+        case .auto:
+            return nil
+        case .oneSided:
+            return "sides=one-sided"
+        case .longEdge:
+            return "sides=two-sided-long-edge"
+        case .shortEdge:
+            return "sides=two-sided-short-edge"
+        }
+    }
+}
+
 struct Options {
     var inputPDF: URL?
     var stampText = "STAMP"
     var printer: String?
+    var printOptions: [String] = []
+    var colorMode = PrintColorMode.auto
+    var sides = PrintSides.auto
     var outputPDF: URL?
     var position = StampPosition.topRight
     var pages = PageSelection.all
@@ -69,6 +115,9 @@ func printUsage() {
       --stamp TEXT              Stamp text. Default: STAMP
       --print                   Send the stamped PDF to lp
       --printer NAME            Printer name passed to lp -d
+      --print-option OPTION     Printer option passed as lp -o OPTION. Repeatable
+      --color MODE              auto, color, monochrome. Default: auto
+      --sides MODE              auto, one-sided, two-sided-long-edge, two-sided-short-edge
       --output PATH             Keep the stamped PDF at PATH
       --position NAME           center, top-left, top-right, bottom-left, bottom-right
       --pages PAGES             all, first, or page ranges like 1,3,5-7. Default: all
@@ -109,6 +158,21 @@ func parseOptions(_ arguments: [String]) throws -> Options {
                 options.stampText = value
             case "--printer":
                 options.printer = value
+            case "--print-option":
+                guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw AppError.usage("Print option must not be empty.")
+                }
+                options.printOptions.append(value)
+            case "--color":
+                guard let colorMode = PrintColorMode(rawValue: value) else {
+                    throw AppError.usage("Unknown color mode: \(value)")
+                }
+                options.colorMode = colorMode
+            case "--sides":
+                guard let sides = PrintSides(rawValue: value) else {
+                    throw AppError.usage("Unknown sides mode: \(value)")
+                }
+                options.sides = sides
             case "--output":
                 options.outputPDF = URL(fileURLWithPath: value)
             case "--position":
@@ -304,14 +368,28 @@ func makeTemporaryOutputURL() -> URL {
     return directory.appendingPathComponent("print-with-stamp-\(UUID().uuidString).pdf")
 }
 
-func printPDF(_ pdfURL: URL, printer: String?) throws {
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/lp")
+func lpArguments(for pdfURL: URL, options: Options) -> [String] {
     var arguments: [String] = []
-    if let printer {
+    if let printer = options.printer {
         arguments.append(contentsOf: ["-d", printer])
     }
+    for colorOption in options.colorMode.lpOptions {
+        arguments.append(contentsOf: ["-o", colorOption])
+    }
+    if let sidesOption = options.sides.lpOption {
+        arguments.append(contentsOf: ["-o", sidesOption])
+    }
+    for printOption in options.printOptions {
+        arguments.append(contentsOf: ["-o", printOption])
+    }
     arguments.append(pdfURL.path)
+    return arguments
+}
+
+func printPDF(_ pdfURL: URL, options: Options) throws {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/lp")
+    let arguments = lpArguments(for: pdfURL, options: options)
     process.arguments = arguments
 
     let pipe = Pipe()
@@ -348,7 +426,7 @@ func run() throws {
         return
     }
 
-    try printPDF(outputURL, printer: options.printer)
+    try printPDF(outputURL, options: options)
 
     if options.outputPDF == nil {
         try? FileManager.default.removeItem(at: outputURL)
