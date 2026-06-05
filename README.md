@@ -12,6 +12,7 @@ PDF にスタンプを付加し、必要な場合だけ macOS の `lp` コマン
 - macOS の `lp` にプリンタ名や印刷オプションを渡せる
 - 白黒、カラー、片面、両面印刷のショートカットを用意
 - プリンタ固有の `lp -o` オプションも指定可能
+- Finder クイックアクション用スクリプトで設定ファイルを読み込んで実行可能
 
 ## Requirements
 
@@ -54,6 +55,12 @@ print-with-stamp input.pdf --stamp "CONFIDENTIAL" --output stamped.pdf
 
 ```sh
 sudo cp .build/release/print-with-stamp /usr/local/bin/
+```
+
+Finder クイックアクションから使う場合は、補助スクリプトも `PATH` の通った場所へコピーしておくと便利です。
+
+```sh
+cp scripts/print-with-stamp-finder.sh ~/bin/print-with-stamp-finder.sh
 ```
 
 ## Usage
@@ -146,6 +153,48 @@ swift run print-with-stamp input.pdf \
 - `--help`: ヘルプを表示
 
 `--output` は保存先の指定です。印刷は `--print` を指定した場合だけ実行されます。
+
+## Config File
+
+`print-with-stamp` 本体は設定ファイルを読みません。Finder クイックアクション用の `scripts/print-with-stamp-finder.sh` が設定ファイルを読み込み、そこに書いたオプションを `print-with-stamp` に渡します。
+
+設定ファイルは、例えば `~/.config/print-with-stamp/options` に置きます。
+
+```sh
+mkdir -p ~/.config/print-with-stamp
+cp examples/options.conf ~/.config/print-with-stamp/options
+```
+
+設定ファイルには CLI に渡すオプションをそのまま書けます。空行と `#` で始まる行は無視されます。引用符つきの値も使えます。
+
+```sh
+--stamp "電子保存済 / 原本は電子データ / 紙は参照用"
+--position bottom-right
+--stamp-size 22
+--print
+--print-option ARCMode=CMBW
+--sides one-sided
+```
+
+`--print` を設定ファイルに入れると、Finder クイックアクションからの実行は印刷まで進みます。通常の CLI 操作で意図せず印刷しないよう、設定ファイルの読み込みは補助スクリプト側だけで行います。
+
+## Finder Quick Action
+
+Finder で PDF を選び、クイックアクションから固定設定でスタンプ印刷する場合の一例です。
+
+1. `print-with-stamp` をインストールします。
+2. `~/.config/print-with-stamp/options` を作成します。
+3. `scripts/print-with-stamp-finder.sh` を `~/bin/print-with-stamp-finder.sh` などへコピーします。
+4. Automator で「クイックアクション」を新規作成します。
+5. 「ワークフローが受け取る現在の項目」を「PDF ファイル」、「検索対象」を「Finder.app」にします。
+6. 「シェルスクリプトを実行」を追加し、「入力の引き渡し方法」を「引数として」にします。
+7. スクリプト欄に次を入れます。
+
+```sh
+~/bin/print-with-stamp-finder.sh "$@"
+```
+
+Automator では `PATH` が普段のターミナルと違うことがあります。うまく見つからない場合は、`~/bin/print-with-stamp-finder.sh` の中で使う `print-with-stamp` のパスを絶対パスにしてください。
 
 ## Printer Options
 
