@@ -30,7 +30,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     continue
   fi
 
+  # Split like zsh command syntax, then remove quotes preserved by ${(z)...}.
   parsed_options=(${(z)line})
+  parsed_options=("${(@Q)parsed_options}")
   if [[ ${#parsed_options[@]} -eq 0 ]]; then
     show_error "Config line $line_number could not be parsed: $line"
     exit 1
