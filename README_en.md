@@ -1,5 +1,9 @@
 # Print With Stamp
 
+<p align="center">
+  <img src="docs/images/logo.png" alt="Print With Stamp logo" width="220">
+</p>
+
 A small macOS CLI tool for adding stamps to PDFs and printing them with the `lp` command only when requested.
 
 It can be used for common stamps such as `CONFIDENTIAL`, `APPROVED`, or `REVIEWED`.

@@ -1,5 +1,9 @@
 # Print With Stamp
 
+<p align="center">
+  <img src="docs/images/logo.png" alt="Print With Stamp logo" width="220">
+</p>
+
 PDF にスタンプを付加し、必要な場合だけ macOS の `lp` コマンドで印刷する小さな CLI ツールです。
 
 「極秘」などのよくあるスタンプを付けることはもちろん、電子保存済みの書類を業務上印刷するときに、紙が原本ではなく参照用であることを示すスタンプを付けてから印刷できます。
