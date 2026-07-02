@@ -182,6 +182,18 @@ cp examples/options.conf ~/.config/print-with-stamp/options
 
 `--print` を設定ファイルに入れると、Finder クイックアクションからの実行は印刷まで進みます。通常の CLI 操作で意図せず印刷しないよう、設定ファイルの読み込みは補助スクリプト側だけで行います。
 
+修飾キーごとに設定を切り替えたい場合は、次のファイルを作成します。それぞれのファイルには、そのモードで使うオプションをフルセットで書いてください。`options` の内容はマージされません。
+
+```text
+~/.config/print-with-stamp/options          # 修飾キーなし
+~/.config/print-with-stamp/options.option   # Option
+~/.config/print-with-stamp/options.shift    # Shift
+~/.config/print-with-stamp/options.control  # Control
+~/.config/print-with-stamp/options.command  # Command
+```
+
+複数の修飾キーが押されている場合は、`option`, `shift`, `control`, `command` の順に最初に見つかった設定ファイルを使います。対応する設定ファイルがない場合は `options` を使います。
+
 ## Finder Quick Action
 
 Finder で PDF を選び、クイックアクションから固定設定でスタンプ印刷する場合の一例です。

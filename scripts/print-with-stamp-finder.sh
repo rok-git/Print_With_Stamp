@@ -1,7 +1,8 @@
 #!/bin/zsh
 set -euo pipefail
 
-config_path="${PRINT_WITH_STAMP_CONFIG:-$HOME/.config/print-with-stamp/options}"
+config_dir="${PRINT_WITH_STAMP_CONFIG_DIR:-$HOME/.config/print-with-stamp}"
+config_path="${PRINT_WITH_STAMP_CONFIG:-}"
 command_path="${PRINT_WITH_STAMP_COMMAND:-}"
 
 show_error() {
@@ -9,10 +10,64 @@ show_error() {
   /usr/bin/osascript -e "display alert \"Print With Stamp\" message \"$message\"" >/dev/null 2>&1 || print -u2 "$message"
 }
 
+current_modifiers() {
+  if ! command -v swift >/dev/null 2>&1; then
+    return 0
+  fi
+
+  swift - 2>/dev/null <<'SWIFT' || true
+import CoreGraphics
+import Foundation
+
+let flags = CGEventSource.flagsState(.combinedSessionState)
+var modifiers: [String] = []
+
+if flags.contains(.maskShift) {
+    modifiers.append("shift")
+}
+if flags.contains(.maskAlternate) {
+    modifiers.append("option")
+}
+if flags.contains(.maskControl) {
+    modifiers.append("control")
+}
+if flags.contains(.maskCommand) {
+    modifiers.append("command")
+}
+
+print(modifiers.joined(separator: " "))
+SWIFT
+}
+
+selected_config_path() {
+  if [[ -n "$config_path" ]]; then
+    print -r -- "$config_path"
+    return 0
+  fi
+
+  local default_config="$config_dir/options"
+  local modifiers=(${(z)"$(current_modifiers)"})
+  local modifier
+
+  for modifier in option shift control command; do
+    if (( ${modifiers[(Ie)$modifier]} )); then
+      local modifier_config="$config_dir/options.$modifier"
+      if [[ -f "$modifier_config" ]]; then
+        print -r -- "$modifier_config"
+        return 0
+      fi
+    fi
+  done
+
+  print -r -- "$default_config"
+}
+
 if [[ $# -eq 0 ]]; then
   show_error "PDF file was not provided."
   exit 1
 fi
+
+config_path="$(selected_config_path)"
 
 if [[ ! -f "$config_path" ]]; then
   show_error "Config file was not found: $config_path"

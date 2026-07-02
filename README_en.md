@@ -182,6 +182,18 @@ The config file can contain the same options you would pass to the CLI. Empty li
 
 If `--print` is included in the config file, the Finder Quick Action will send the stamped PDF to the printer. To avoid accidental printing from normal CLI use, config files are only read by the helper script.
 
+To switch settings by modifier key, create one of the following files. Each file should contain the full set of options for that mode. The contents of `options` are not merged into modifier-specific files.
+
+```text
+~/.config/print-with-stamp/options          # No modifier key
+~/.config/print-with-stamp/options.option   # Option
+~/.config/print-with-stamp/options.shift    # Shift
+~/.config/print-with-stamp/options.control  # Control
+~/.config/print-with-stamp/options.command  # Command
+```
+
+If multiple modifier keys are held down, the helper uses the first existing config file in this order: `option`, `shift`, `control`, `command`. If no matching modifier-specific file exists, it falls back to `options`.
+
 ## Finder Quick Action
 
 Here is one way to stamp and print selected PDFs from Finder using fixed options.
